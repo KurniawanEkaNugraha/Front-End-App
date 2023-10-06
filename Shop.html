@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+</head>
+
+<body class="bg-white">
+
+<!-- Navbar -->
+<nav id="navbar" class="py-5 bg-gray-800 mx-0">
+    <div class="container flex flex-col md:flex-row items-center justify-between">
+        <a href="#" class="text-2xl tracking-widest text-white ml-0 md:ml-10 mb-4 md:mb-0">
+            Qwerty Computer
+        </a>
+        <div class="md:flex space-x-4 md:ml-auto"> <!-- Pindahkan ke sebelah kanan (md:ml-auto) -->
+            <a href="index.html" target="_blank" class="text-white hover:border-b hover:border-white hover:pb-2 transition-all duration-300">
+                Home
+            </a>
+            <a href="#" class="text-white hover:border-b hover:border-white hover:pb-2 transition-all duration-300">
+                Product
+            </a>
+        </div>
+    </div>
+</nav>
+<!-- End Navbar -->
+
+
+<!-- Items -->
+<div id="app" class="container mx-auto p-4">
+    <div class="max-w-screen-xl mr-4 mb-5">
+        <div class="flex items-center ml-8">
+            <i class='bx bx-search mr-2'></i>
+            <input v-model="searchKeyword" @input="searchProducts" class="w-full p-2 border rounded mt-2"
+                placeholder="Search for products">
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- Item 1 -->
+        <div v-for="(product, index) in filteredProducts" :key="index" class="p-4 border rounded-lg shadow-md">
+            <h2 class="text-lg font-semibold">{{ product.name }}</h2>
+            <img :src="product.image" :alt="'Product ' + (index + 1) + ' Image'" class="w-full h-auto">
+            <p class="text-gray-600 text-justify">{{ product.description }}</p>
+            <p class="mt-2 font-semibold">Rp {{ product.price }}</p>
+            <p class="text-red-500">Diskon: {{ product.discount }}%</p>
+            <div class="flex items-center mt-2">
+                <div class="flex justify-center items-center w-16 p-2 border rounded mr-2">
+                    <input v-model="product.quantity" type="number" class="w-12 p-0 text-center">
+                </div>
+                <button @click="addToCart(product.name, product.price, product.discount, product.quantity)" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Tambahkan Keranjang</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h2 class="text-xl font-semibold flex items-center">Keranjang Belanja <i class='ml-2 bx bx-cart'></i></h2>
+        
+        <!-- Tampilkan item keranjang di sebelah kiri -->
+        <div class="flex justify-start">
+            <ul>
+                <li v-for="(item, index) in cart" :key="index" class="mt-2">
+                    {{ item.name }} - Banyaknya: {{ item.quantity }} - Total: Rp {{ item.total }}
+                    <button @click="removeFromCart(index)" class="text-red-500 ml-2">Remove</button>
+                </li>
+            </ul>
+        </div>
+        <p class="mt-2 font-semibold">Total: Rp {{ cartTotal }}</p>
+    </div>
+
+    <!-- Tombol Scroll ke Atas -->
+    <button @click="scrollToTop" class="fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        <i class='bx bx-chevron-up'></i>
+    </button>
+
+    <!-- Tombol Scroll ke Bawah -->
+    <button @click="scrollToBottom" class="fixed bottom-16 right-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        <i class='bx bx-chevron-down'></i>
+    </button>
+
+    <!-- Tombol Checkout -->
+    <button @click="checkout" class="bg-green-500 text-white px-4 py-2 rounded mt-4 hover:bg-green-600">
+        {{ checkoutText }}
+    </button>
+
+    <!-- Notifikasi dan Animasi Loading -->
+    <div v-if="showNotification" class="mt-4" :class="{ 'animate-pulse': isLoading }">
+        <p v-if="isLoading">Pesanan sedang diproses...</p>
+        <p v-else>Pesanan telah diproses. Terima kasih!</p>
+    </div>
+</div>
+
+<script>
+new Vue({
+    el: '#app',
+    data: {
+        cart: [],
+        products: [
+            { name: 'Mouse Rexus', price: 400000, description: 'Mouse Gaming SuperX Pro adalah pilihan sempurna bagi para pemain serius yang menginginkan kinerja luar biasa dan pengalaman bermain yang tak tertandingi.', discount: 10, image: 'images/view-neon-illuminated-gaming-desk-setup-with-keyboard_23-2149529362.jpg' },
+            { name: 'Keyboard Razer', price: 250000, description: 'Dengan Keyboard Razer, Anda akan merasakan sensasi gaming yang belum pernah Anda rasakan sebelumnya. Keyboard ini dilengkapi dengan RGB', discount: 15, image: 'images/view-neon-illuminated-gaming-desk-setup-with-keyboard.jpg' },
+            { name: 'Headset Logitech', price: 150000, description: 'Headset gaming kami adalah jawaban bagi para gamer sejati yang menginginkan performa audio yang luar biasa dalam permainan. Didesain khusus untuk Para Gamers', discount: 10, image: 'images/various-wireless-devices-yellow-table.jpg' },
+            { name: 'Monitor LG', price: 100000, description: 'Tingkatkan pengalaman visual Anda dengan monitor LED 24 inci berkualitas tinggi. Layar Full HD memberikan gambar yang tajam dan warna yang hidup.', discount: 20, image: 'images/view-computer-monitor-display_23-2150757395.jpg' },
+            { name: 'Laptop Asus Ryzen 5', price: 50000, description: 'Produk Lokal Kualitas Luar', discount: 0, image: 'images/computer-laptop-old-vintage-book.jpg' },
+            { name: 'TWS Robot', price: 40000, description: 'TWS dengan Jangkauan 10 Meter', discount: 0, image: 'images/wireless-inear-headphones-with-case-pink-background-flat-lay_169016-23020.jpg' },
+            { name: 'Iphone 20 Pro Max', price: 200000, description: 'Produk Baru Dan Berkualitas', discount: 0, image: 'images/white-blank-screen-display-mobile-phone-with-earphones-against-blue-background_23-2148041446.jpg' },
+            { name: 'Kabel LAN', price: 300000, description: 'Kabel Berkualitas Tinggi', discount: 0, image: 'images/networking-concept-still-life-composition_23-2149035686.jpg' },
+        ],
+        checkoutText: 'Checkout',
+        showNotification: false,
+        isLoading: false,
+        searchKeyword: '',
+    },
+    computed: {
+        cartTotal() {
+            return this.cart.reduce((total, item) => total + item.total, 0);
+        },
+        filteredProducts() {
+            return this.products.filter(product => {
+                return product.name.toLowerCase().includes(this.searchKeyword.toLowerCase());
+            });
+        },
+    },
+    methods: {
+        addToCart(name, price, discount, quantity) {
+            if (quantity > 0) {
+                const discountedPrice = price - (price * discount / 100);
+                const total = discountedPrice * quantity;
+                this.cart.push({ name, price: discountedPrice, quantity, total });
+            }
+        },
+        removeFromCart(index) {
+            this.cart.splice(index, 1);
+        },
+        checkout() {
+            this.checkoutText = 'Processing...';
+            this.isLoading = true;
+
+            setTimeout(() => {
+                this.cart = [];
+                this.checkoutText = 'Checkout';
+                this.isLoading = false;
+                this.showNotification = true;
+
+                setTimeout(() => {
+                    this.showNotification = false;
+                }, 3000);
+            }, 2000);
+        },
+        scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        scrollToBottom() {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        },
+        searchProducts() {
+            // Handle search logic here
+        },
+    },
+});
+</script>
+</body>
+</html>
